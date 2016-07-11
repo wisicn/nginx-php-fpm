@@ -1,6 +1,6 @@
 FROM alpine:3.4
 
-MAINTAINER ngineered <support@ngineered.co.uk>
+MAINTAINER Wisicn <wisicn@gmail.com>
 
 ENV php_conf /etc/php5/php.ini 
 ENV fpm_conf /etc/php5/php-fpm.conf
@@ -34,6 +34,7 @@ RUN apk add --no-cache bash \
     php5-json \
     php5-phar \
     php5-soap \
+    php5-pdo_sqlite \
     php5-dom && \
     mkdir -p /etc/nginx && \
     mkdir -p /var/www/app && \
@@ -89,6 +90,7 @@ RUN chmod 755 /start.sh
 
 # copy in code
 ADD src/ /var/www/html/
+RUN chown nginx:nginx -R /var/www/html/
 
 EXPOSE 443 80
 

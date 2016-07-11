@@ -1,3 +1,5 @@
+## Credit
+This docker file is from [https://github.com/ngineered/nginx-php-fpm](https://github.com/ngineered/nginx-php-fpm). Thanks the author of ngineered/nginx-php-fpm. I just add a php5-pdo_sqlite module.
 ## Introduction
 This is a Dockerfile to build a container image for nginx and php-fpm, with the ability to pull website code from git. The container also has the ability to update templated files with vaiables passed to docker in order to update your settings.
 

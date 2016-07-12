@@ -35,6 +35,7 @@ RUN apk add --no-cache bash \
     php5-phar \
     php5-soap \
     php5-pdo_sqlite \
+    php5-zip \
     php5-dom && \
     mkdir -p /etc/nginx && \
     mkdir -p /var/www/app && \

@@ -19,6 +19,13 @@ else
   webroot=/var/www/html
 fi
 
+# Set custom vhostroot
+if [ ! -z "$VHOSTROOT" ]; then
+  VHOSTROOT=/var/www/vhost
+fi
+mkdir -p $VHOSTROOT
+chown -Rf nginx.nginx $VHOSTROOT
+
 # Setup git variables
 if [ ! -z "$GIT_EMAIL" ]; then
  git config --global user.email "$GIT_EMAIL"

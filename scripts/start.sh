@@ -92,6 +92,12 @@ fi
 # Always chown webroot for better mounting
 chown -Rf nginx.nginx /var/www/html
 
+# create a 4096 bit key for DHE
+# then you can add "ssl_dhparam /etc/ssl/certs/dhparam.pem;" in nginx
+if [ ! -f /etc/ssl/certs/dhparam.pem ]; then
+  openssl dhparam -out /etc/ssl/certs/dhparam.pem 4096
+fi
+
 # Run custom scripts
 if [[ "$RUN_SCRIPTS" == "1" ]] ; then
   if [ -d "/var/www/html/scripts/" ]; then

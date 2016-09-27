@@ -26,8 +26,8 @@ function initialize_variables {
     DOMAINS_FOLDER="$VHOSTROOT/domains"
     DOMAIN_PATH="$VHOSTROOT/domains/$DOMAIN"
 
-    DOMAIN_CONFIG_PATH="/etc/nginx/sites-available/$DOMAIN"
-    DOMAIN_ENABLED_PATH="/etc/nginx/sites-enabled/$DOMAIN"
+    DOMAIN_CONFIG_PATH="$VHOSTROOT/conf/sites-available/$DOMAIN"
+    DOMAIN_ENABLED_PATH="$VHOSTROOT/conf/sites-enabled/$DOMAIN"
 
 
 
@@ -46,6 +46,7 @@ function reload_webserver {
 
 
 function add_domain {
+
 
     # Create public_html and log directories for domain
     mkdir -p $DOMAIN_PATH/{logs,public_html}

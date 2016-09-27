@@ -21,9 +21,11 @@ fi
 
 # Set custom vhostroot
 if [ ! -z "$VHOSTROOT" ]; then
+  sed -i "s#include /var/www/vhost/conf/sites-enabled/*;#include ${VHOSTROOT}//conf/sites-enabled/*;#g" /etc/nginx/nginx.conf
+else
   VHOSTROOT=/var/www/vhost
 fi
-mkdir -p $VHOSTROOT
+mkdir -p $VHOSTROOT/{conf,domains}
 chown -Rf nginx.nginx $VHOSTROOT
 
 # Setup git variables

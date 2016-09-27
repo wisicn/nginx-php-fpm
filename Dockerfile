@@ -50,6 +50,7 @@ RUN apk add --no-cache bash \
     libffi-dev &&\
     mkdir -p /etc/nginx && \
     mkdir -p /var/www/app && \
+    mkdir -p /var/www/vhost && \
     mkdir -p /run/nginx && \
     mkdir -p /var/log/supervisor &&\
     php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \

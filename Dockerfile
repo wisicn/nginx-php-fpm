@@ -115,6 +115,7 @@ ADD src/ /var/www/html/
 ADD errors/ /var/www/errors/
 
 VOLUME /var/www/html
+VOLUME /var/wwwa/vhost
 
 EXPOSE 443 80
 

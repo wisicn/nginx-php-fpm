@@ -1,3 +1,4 @@
+[![](https://images.microbadger.com/badges/version/wisicn/nginx-php-fpm.svg)](https://microbadger.com/images/wisicn/nginx-php-fpm "Get your own version badge on microbadger.com")  [![](https://images.microbadger.com/badges/image/wisicn/nginx-php-fpm.svg)](https://microbadger.com/images/wisicn/nginx-php-fpm "Get your own image badge on microbadger.com")
 ## Credit
 This docker file is from [https://github.com/ngineered/nginx-php-fpm](https://github.com/ngineered/nginx-php-fpm). Thanks the author of ngineered/nginx-php-fpm. I just add a php5-pdo_sqlite module.
 ## Introduction

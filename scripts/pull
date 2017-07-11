@@ -10,6 +10,11 @@ if [ -z "$GIT_NAME" ]; then
  exit
 fi
 
+# Try auto install for composer
+if [ -f "/var/www/html/composer.lock" ]; then
+  composer install --no-dev --working-dir=/var/www/html
+fi
+
 cd /var/www/html
-git pull
+git pull || exit 1
 chown -Rf nginx:nginx /var/www/html

@@ -5,6 +5,10 @@
 mkdir -p -m 0700 /root/.ssh
 echo -e "Host *\n\tStrictHostKeyChecking no\n" >> /root/.ssh/config
 
+if [[ "$GIT_USE_SSH" == "1" ]] ; then
+  echo -e "Host *\n\tUser ${GIT_USERNAME}\n\n" >> /root/.ssh/config
+fi
+
 if [ ! -z "$SSH_KEY" ]; then
  echo $SSH_KEY > /root/.ssh/id_rsa.base64
  base64 -d /root/.ssh/id_rsa.base64 > /root/.ssh/id_rsa
@@ -13,10 +17,9 @@ fi
 
 # Set custom webroot
 if [ ! -z "$WEBROOT" ]; then
-  webroot=$WEBROOT
-  sed -i "s#root /var/www/html;#root ${webroot};#g" /etc/nginx/sites-available/default.conf
+ sed -i "s#root /var/www/html;#root ${WEBROOT};#g" /etc/nginx/sites-available/default.conf
 else
-  webroot=/var/www/html
+ webroot=/var/www/html
 fi
 
 # Set custom vhostroot
@@ -41,23 +44,34 @@ fi
 if [ ! -d "/var/www/html/.git" ]; then
  # Pull down code from git for our site!
  if [ ! -z "$GIT_REPO" ]; then
-   # Remove the test index file
-   rm -Rf /var/www/html/*
-   if [ ! -z "$GIT_BRANCH" ]; then
-     if [ -z "$GIT_USERNAME" ] && [ -z "$GIT_PERSONAL_TOKEN" ]; then
-       git clone -b $GIT_BRANCH $GIT_REPO /var/www/html/
-     else
-       git clone -b ${GIT_BRANCH} https://${GIT_USERNAME}:${GIT_PERSONAL_TOKEN}@${GIT_REPO} /var/www/html
-     fi
+   # Remove the test index file if you are pulling in a git repo
+   if [ ! -z ${REMOVE_FILES} ] && [ ${REMOVE_FILES} == 0 ]; then
+     echo "skiping removal of files"
    else
-     if [ -z "$GIT_USERNAME" ] && [ -z "$GIT_PERSONAL_TOKEN" ]; then
-       git clone $GIT_REPO /var/www/html/
-     else
-       git clone https://${GIT_USERNAME}:${GIT_PERSONAL_TOKEN}@${GIT_REPO} /var/www/html
-     fi
+     rm -Rf /var/www/html/*
    fi
+   GIT_COMMAND='git clone '
+   if [ ! -z "$GIT_BRANCH" ]; then
+     GIT_COMMAND=${GIT_COMMAND}" -b ${GIT_BRANCH}"
+   fi
+
+   if [ -z "$GIT_USERNAME" ] && [ -z "$GIT_PERSONAL_TOKEN" ]; then
+     GIT_COMMAND=${GIT_COMMAND}" ${GIT_REPO}"
+   else
+    if [[ "$GIT_USE_SSH" == "1" ]]; then
+      GIT_COMMAND=${GIT_COMMAND}" ${GIT_REPO}"
+    else
+      GIT_COMMAND=${GIT_COMMAND}" https://${GIT_USERNAME}:${GIT_PERSONAL_TOKEN}@${GIT_REPO}"
+    fi
+   fi
+   ${GIT_COMMAND} /var/www/html || exit 1
    chown -Rf nginx.nginx /var/www/html
  fi
+fi
+
+# Try auto install for composer
+if [ -f "/var/www/html/composer.lock" ]; then
+  composer install --no-dev --working-dir=/var/www/html
 fi
 
 # Enable custom nginx config files if they exist
@@ -71,35 +85,63 @@ fi
 
 # Display PHP error's or not
 if [[ "$ERRORS" != "1" ]] ; then
- echo php_flag[display_errors] = off >> /etc/php5/php-fpm.conf
+ echo php_flag[display_errors] = off >> /usr/local/etc/php-fpm.conf
 else
- echo php_flag[display_errors] = on >> /etc/php5/php-fpm.conf
+ echo php_flag[display_errors] = on >> /usr/local/etc/php-fpm.conf
 fi
 
 # Display Version Details or not
 if [[ "$HIDE_NGINX_HEADERS" == "0" ]] ; then
  sed -i "s/server_tokens off;/server_tokens on;/g" /etc/nginx/nginx.conf
 else
- sed -i "s/expose_php = On/expose_php = Off/g" /etc/php5/conf.d/php.ini
+ sed -i "s/expose_php = On/expose_php = Off/g" /usr/local/etc/php-fpm.conf
+fi
+
+# Pass real-ip to logs when behind ELB, etc
+if [[ "$REAL_IP_HEADER" == "1" ]] ; then
+ sed -i "s/#real_ip_header X-Forwarded-For;/real_ip_header X-Forwarded-For;/" /etc/nginx/sites-available/default.conf
+ sed -i "s/#set_real_ip_from/set_real_ip_from/" /etc/nginx/sites-available/default.conf
+ if [ ! -z "$REAL_IP_FROM" ]; then
+  sed -i "s#172.16.0.0/12#$REAL_IP_FROM#" /etc/nginx/sites-available/default.conf
+ fi
+fi
+# Do the same for SSL sites
+if [ -f /etc/nginx/sites-available/default-ssl.conf ]; then
+ if [[ "$REAL_IP_HEADER" == "1" ]] ; then
+  sed -i "s/#real_ip_header X-Forwarded-For;/real_ip_header X-Forwarded-For;/" /etc/nginx/sites-available/default-ssl.conf
+  sed -i "s/#set_real_ip_from/set_real_ip_from/" /etc/nginx/sites-available/default-ssl.conf
+  if [ ! -z "$REAL_IP_FROM" ]; then
+   sed -i "s#172.16.0.0/12#$REAL_IP_FROM#" /etc/nginx/sites-available/default-ssl.conf
+  fi
+ fi
 fi
 
 # Increase the memory_limit
 if [ ! -z "$PHP_MEM_LIMIT" ]; then
- sed -i "s/memory_limit = 128M/memory_limit = ${PHP_MEM_LIMIT}M/g" /etc/php5/conf.d/php.ini
+ sed -i "s/memory_limit = 128M/memory_limit = ${PHP_MEM_LIMIT}M/g" /usr/local/etc/php/conf.d/docker-vars.ini
 fi
 
 # Increase the post_max_size
 if [ ! -z "$PHP_POST_MAX_SIZE" ]; then
- sed -i "s/post_max_size = 100M/post_max_size = ${PHP_POST_MAX_SIZE}M/g" /etc/php5/conf.d/php.ini
+ sed -i "s/post_max_size = 100M/post_max_size = ${PHP_POST_MAX_SIZE}M/g" /usr/local/etc/php/conf.d/docker-vars.ini
 fi
 
 # Increase the upload_max_filesize
 if [ ! -z "$PHP_UPLOAD_MAX_FILESIZE" ]; then
- sed -i "s/upload_max_filesize = 100M/upload_max_filesize= ${PHP_UPLOAD_MAX_FILESIZE}M/g" /etc/php5/conf.d/php.ini
+ sed -i "s/upload_max_filesize = 100M/upload_max_filesize= ${PHP_UPLOAD_MAX_FILESIZE}M/g" /usr/local/etc/php/conf.d/docker-vars.ini
 fi
 
-# Always chown webroot for better mounting
-chown -Rf nginx.nginx /var/www/html
+if [ ! -z "$PUID" ]; then
+  if [ -z "$PGID" ]; then
+    PGID=${PUID}
+  fi
+  deluser nginx
+  addgroup -g ${PGID} nginx
+  adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx -u ${PUID} nginx
+else
+  # Always chown webroot for better mounting
+  chown -Rf nginx.nginx /var/www/html
+fi
 
 # create a 4096 bit key for DHE
 # then you can add "ssl_dhparam /etc/ssl/certs/dhparam.pem;" in nginx
@@ -120,4 +162,5 @@ if [[ "$RUN_SCRIPTS" == "1" ]] ; then
 fi
 
 # Start supervisord and services
-/usr/bin/supervisord -n -c /etc/supervisord.conf
+exec /usr/bin/supervisord -n -c /etc/supervisord.conf
+

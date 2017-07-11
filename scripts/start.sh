@@ -22,15 +22,6 @@ else
  webroot=/var/www/html
 fi
 
-# Set custom vhostroot
-if [ ! -z "$VHOSTROOT" ]; then
-  sed -i "s#include /var/www/vhost/conf/sites-enabled/*;#include ${VHOSTROOT}//conf/sites-enabled/*;#g" /etc/nginx/nginx.conf
-else
-  VHOSTROOT=/var/www/vhost
-fi
-mkdir -p $VHOSTROOT/{conf,domains}
-chown -Rf nginx.nginx $VHOSTROOT
-
 # Setup git variables
 if [ ! -z "$GIT_EMAIL" ]; then
  git config --global user.email "$GIT_EMAIL"
@@ -141,12 +132,6 @@ if [ ! -z "$PUID" ]; then
 else
   # Always chown webroot for better mounting
   chown -Rf nginx.nginx /var/www/html
-fi
-
-# create a 4096 bit key for DHE
-# then you can add "ssl_dhparam /etc/ssl/certs/dhparam.pem;" in nginx
-if [ ! -f /etc/ssl/certs/dhparam.pem ]; then
-  openssl dhparam -out /etc/ssl/certs/dhparam.pem 4096
 fi
 
 # Run custom scripts
